@@ -89,6 +89,7 @@ bool Adafruit_PM25AQI::read(PM25_AQI_Data *data) {
     }
   } else if (serial_dev) { // ok using uart
     if (!serial_dev->available()) {
+      Serial.println("PM25: Serial data unavailable");
       return false;
     }
 
@@ -98,12 +99,14 @@ bool Adafruit_PM25AQI::read(PM25_AQI_Data *data) {
       serial_dev->read();
       skipped++;
       if (!serial_dev->available()) {
+        Serial.println("PM25: Serial data unavailable part way through");
         return false;
       }
     }
 
     // Check for the start character in the stream for both sensors
     if ((serial_dev->peek() != 0x42) && (serial_dev->peek() != 0x16)) {
+      Serial.println("PM25: Serial peek failed");
       serial_dev->read();
       return false;
     }
@@ -117,6 +120,7 @@ bool Adafruit_PM25AQI::read(PM25_AQI_Data *data) {
 
     // Are there enough bytes to read from?
     if (serial_dev->available() < bufLen) {
+      Serial.println("PM25: Serial data too short");
       return false;
     }
 
@@ -125,15 +129,18 @@ bool Adafruit_PM25AQI::read(PM25_AQI_Data *data) {
   } else {
     return false;
   }
+  Serial.println("PM25: Serial data fetch done");
 
   // Validate start byte is correct if using Adafruit PM sensors
   if ((!is_pm1006 && (buffer[0] != 0x42 || buffer[1] != 0x4d))) {
+    Serial.println("PM25: Serial data start incorrect (not pm1006)");
     return false;
   }
 
   // Validate start header is correct if using Cubic PM1006 sensor
   if (is_pm1006 &&
       (buffer[0] != 0x16 || buffer[1] != 0x11 || buffer[2] != 0x0B)) {
+    Serial.println("PM25: Serial data start incorrect (pm1006)");
     return false;
   }
 
@@ -166,14 +173,18 @@ bool Adafruit_PM25AQI::read(PM25_AQI_Data *data) {
 
   // Validate checksum
   if ((is_pm1006 && csum != 0) || (!is_pm1006 && sum != data->checksum)) {
+    Serial.println("PM25: Serial data checksum incorrect");
     return false;
   }
+
+  Serial.println("PM25: Serial data checks complete, about to calculate AQIs");
 
   // convert concentration to AQI
   data->aqi_pm25_us = pm25_aqi_us(data->pm25_env);
   data->aqi_pm25_china = pm25_aqi_china(data->pm25_env);
   data->aqi_pm100_us = pm100_aqi_us(data->pm100_env);
   data->aqi_pm100_china = pm100_aqi_china(data->pm100_env);
+  Serial.println("PM25: Calculated AQIs, returning TRUE for read()");
 
   // success!
   return true;
