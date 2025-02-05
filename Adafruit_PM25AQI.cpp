@@ -36,45 +36,12 @@
  */
 Adafruit_PM25AQI::Adafruit_PM25AQI() {}
 
-/*!
- *  @brief  Setups the hardware and detects a valid PMSA003I. Initializes I2C.
- *  @param  theWire
- *          Optional pointer to I2C interface, otherwise use Wire
- *  @return True if PMSA003I found on I2C, False if something went wrong!
- */
-bool Adafruit_PM25AQI::begin_I2C(TwoWire *theWire) {
-  if (!i2c_dev) {
-    i2c_dev = new Adafruit_I2CDevice(PMSA003I_I2CADDR_DEFAULT, theWire);
-  }
-
-  if (!i2c_dev->begin()) {
-    return false;
-  }
-
-  return true;
-}
-
-/*!
- *  @brief  Setups the hardware and detects a valid UART PM2.5
- *  @param  theSerial
- *          Pointer to Stream (HardwareSerial/SoftwareSerial) interface
- *  @return True
- */
-bool Adafruit_PM25AQI::begin_UART(Stream *theSerial) {
-  serial_dev = theSerial;
-
-  return true;
-}
-
-/*!
- *  @brief  Setups the hardware and detects a valid UART PM2.5
- *  @param  data
- *          Pointer to PM25_AQI_Data that will be filled by read()ing
- *  @return True on successful read, false if timed out or bad data
- */
 bool Adafruit_PM25AQI::read(PM25_AQI_Data *data) {
-  uint8_t buffer[32];
-  size_t bufLen = sizeof(buffer);
+  return false; // Base class implementation - should be overridden
+}
+
+// Move the common buffer processing logic to base class
+bool Adafruit_PM25AQI::process_buffer(uint8_t *buffer, size_t bufLen, PM25_AQI_Data *data) {
   uint16_t sum = 0;
   uint8_t csum = 0;
   bool is_pm1006 = false;
@@ -83,57 +50,15 @@ bool Adafruit_PM25AQI::read(PM25_AQI_Data *data) {
     return false;
   }
 
-  if (i2c_dev) { // ok using i2c?
-    if (!i2c_dev->read(buffer, 32)) {
-      return false;
-    }
-  } else if (serial_dev) { // ok using uart
-    if (!serial_dev->available()) {
-      return false;
-    }
-
-    int skipped = 0;
-    while ((skipped < 32) && (serial_dev->peek() != 0x42) &&
-           (serial_dev->peek() != 0x16)) {
-      serial_dev->read();
-      skipped++;
-      if (!serial_dev->available()) {
-        return false;
-      }
-    }
-
-    // Check for the start character in the stream for both sensors
-    if ((serial_dev->peek() != 0x42) && (serial_dev->peek() != 0x16)) {
-      serial_dev->read();
-      return false;
-    }
-
-    // Are we using the Cubic PM1006 sensor?
-    if (serial_dev->peek() == 0x16) {
-      is_pm1006 = true; // Set flag to indicate we are using the PM1006
-      bufLen =
-          20; // Reduce buffer read length to 20 bytes. Last 12 bytes ignored.
-    }
-
-    // Are there enough bytes to read from?
-    if (serial_dev->available() < bufLen) {
-      return false;
-    }
-
-    // Read all available bytes from the serial stream
-    serial_dev->readBytes(buffer, bufLen);
-  } else {
-    return false;
+  // Check for PM1006 sensor
+  if (buffer[0] == 0x16) {
+    is_pm1006 = true;
+    bufLen = 20;
   }
 
-  // Validate start byte is correct if using Adafruit PM sensors
-  if ((!is_pm1006 && (buffer[0] != 0x42 || buffer[1] != 0x4d))) {
-    return false;
-  }
-
-  // Validate start header is correct if using Cubic PM1006 sensor
-  if (is_pm1006 &&
-      (buffer[0] != 0x16 || buffer[1] != 0x11 || buffer[2] != 0x0B)) {
+  // Validate headers
+  if ((!is_pm1006 && (buffer[0] != 0x42 || buffer[1] != 0x4d)) ||
+      (is_pm1006 && (buffer[0] != 0x16 || buffer[1] != 0x11 || buffer[2] != 0x0B))) {
     return false;
   }
 
@@ -148,18 +73,15 @@ bool Adafruit_PM25AQI::read(PM25_AQI_Data *data) {
     }
   }
 
-  // Since header and checksum are OK, parse data from the buffer
+  // Parse data
   if (!is_pm1006) {
-    // The data comes in endian'd, this solves it so it works on all platforms
     uint16_t buffer_u16[15];
     for (uint8_t i = 0; i < 15; i++) {
       buffer_u16[i] = buffer[2 + i * 2 + 1];
       buffer_u16[i] += (buffer[2 + i * 2] << 8);
     }
-    // put it into a nice struct :)
     memcpy((void *)data, (void *)buffer_u16, 30);
   } else {
-    // Cubic PM1006 sensor only produces a pm25_env reading
     data->pm25_env = (buffer[5] << 8) | buffer[6];
     data->checksum = sum;
   }
@@ -169,14 +91,114 @@ bool Adafruit_PM25AQI::read(PM25_AQI_Data *data) {
     return false;
   }
 
-  // convert concentration to AQI
+  // Calculate AQI values
   data->aqi_pm25_us = pm25_aqi_us(data->pm25_env);
   data->aqi_pm25_china = pm25_aqi_china(data->pm25_env);
   data->aqi_pm100_us = pm100_aqi_us(data->pm100_env);
   data->aqi_pm100_china = pm100_aqi_china(data->pm100_env);
 
-  // success!
   return true;
+}
+
+// I2C Implementation
+Adafruit_PM25AQI_I2C::Adafruit_PM25AQI_I2C() : Adafruit_PM25AQI() {}
+
+Adafruit_PM25AQI_I2C::~Adafruit_PM25AQI_I2C() {
+  if (i2c_dev) {
+    delete i2c_dev;
+  }
+}
+
+bool Adafruit_PM25AQI_I2C::begin(TwoWire *theWire, uint8_t addr) {
+  if (i2c_dev) {
+    ~Adafruit_PM25AQI_I2C();
+  }
+  i2c_dev = new Adafruit_I2CDevice(addr, theWire);
+  return i2c_dev->begin();
+}
+
+bool Adafruit_PM25AQI_I2C::read(PM25_AQI_Data *data) {
+  uint8_t buffer[32];
+  
+  if (!i2c_dev || !i2c_dev->read(buffer, 32)) {
+    return false;
+  }
+
+  return process_buffer(buffer, sizeof(buffer), data);
+}
+
+// UART Implementation
+Adafruit_PM25AQI_UART::Adafruit_PM25AQI_UART() : Adafruit_PM25AQI() {}
+
+bool Adafruit_PM25AQI_UART::begin(Stream *theStream) {
+  serial_dev = theStream;
+  return true;
+}
+
+// Plantower UART Implementation
+Adafruit_PM25AQI_UART_Plantower::Adafruit_PM25AQI_UART_Plantower() : Adafruit_PM25AQI_UART() {}
+
+bool Adafruit_PM25AQI_UART_Plantower::read(PM25_AQI_Data *data) {
+  uint8_t buffer[32];
+  
+  if (!serial_dev || !serial_dev->available()) {
+    return false;
+  }
+
+  // Skip until we find the start byte 0x42
+  int skipped = 0;
+  while ((skipped < 32) && (serial_dev->peek() != 0x42)) {
+    serial_dev->read();
+    skipped++;
+    if (!serial_dev->available()) {
+      return false;
+    }
+  }
+
+  if (serial_dev->peek() != 0x42) {
+    serial_dev->read();
+    return false;
+  }
+
+  if (serial_dev->available() < sizeof(buffer)) {
+    return false;
+  }
+
+  serial_dev->readBytes(buffer, sizeof(buffer));
+  return process_buffer(buffer, sizeof(buffer), data);
+}
+
+// PM1006 UART Implementation
+Adafruit_PM25AQI_UART_PM1006::Adafruit_PM25AQI_UART_PM1006() : Adafruit_PM25AQI_UART() {}
+
+bool Adafruit_PM25AQI_UART_PM1006::read(PM25_AQI_Data *data) {
+  uint8_t buffer[20];  // PM1006 uses smaller buffer
+  
+  if (!serial_dev || !serial_dev->available()) {
+    return false;
+  }
+
+  // Skip until we find the start byte 0x16
+  int skipped = 0;
+  while ((skipped < 32) && (serial_dev->peek() != 0x16)) {
+    serial_dev->read();
+    skipped++;
+    if (!serial_dev->available()) {
+      return false;
+    }
+  }
+
+  if (serial_dev->peek() != 0x16) {
+    serial_dev->read();
+    return false;
+  }
+
+  if (serial_dev->available() < sizeof(buffer)) {
+    return false;
+  }
+
+  serial_dev->readBytes(buffer, sizeof(buffer));
+  return process_buffer(buffer, sizeof(buffer), data);
 }
 
 /*!

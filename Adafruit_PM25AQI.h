@@ -60,21 +60,56 @@ typedef struct PMSAQIdata {
 class Adafruit_PM25AQI {
 public:
   Adafruit_PM25AQI();
-  bool begin_I2C(TwoWire *theWire = &Wire);
-  bool begin_UART(Stream *theStream);
-  bool read(PM25_AQI_Data *data);
+  virtual ~Adafruit_PM25AQI() = default;
+  
+  virtual bool begin() = 0;
+  virtual bool read(PM25_AQI_Data *data);
 
   uint16_t pm25_aqi_us(float concentration);
   uint16_t pm25_aqi_china(float concentration);
   uint16_t pm100_aqi_us(float concentration);
   uint16_t pm100_aqi_china(float concentration);
+
+protected:
   float linear(uint16_t aqi_high, uint16_t aqi_low, float conc_high,
                float conc_low, float concentration);
+  bool process_buffer(uint8_t *buffer, size_t bufLen, PM25_AQI_Data *data);
+};
+
+class Adafruit_PM25AQI_I2C : public Adafruit_PM25AQI {
+public:
+  Adafruit_PM25AQI_I2C();
+  virtual ~Adafruit_PM25AQI_I2C();
+  bool begin(TwoWire *theWire = &Wire, uint8_t addr = PMSA003I_I2CADDR_DEFAULT);
+  virtual bool begin() override { return begin(&Wire); }
+  virtual bool read(PM25_AQI_Data *data) override;
 
 private:
   Adafruit_I2CDevice *i2c_dev = NULL;
+};
+
+class Adafruit_PM25AQI_UART : public Adafruit_PM25AQI {
+public:
+  Adafruit_PM25AQI_UART();
+  virtual ~Adafruit_PM25AQI_UART() = default;
+  bool begin(Stream *theStream);
+  virtual bool begin() override { return false; } // Must use begin(Stream*)
+  virtual bool read(PM25_AQI_Data *data) override = 0; // Made pure virtual
+
+protected:
   Stream *serial_dev = NULL;
-  uint8_t _readbuffer[32];
+};
+
+class Adafruit_PM25AQI_UART_Plantower : public Adafruit_PM25AQI_UART {
+public:
+  Adafruit_PM25AQI_UART_Plantower();
+  virtual bool read(PM25_AQI_Data *data) override;
+};
+
+class Adafruit_PM25AQI_UART_PM1006 : public Adafruit_PM25AQI_UART {
+public:
+  Adafruit_PM25AQI_UART_PM1006();
+  virtual bool read(PM25_AQI_Data *data) override;
 };
 
 #endif
