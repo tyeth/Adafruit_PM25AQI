@@ -34,14 +34,14 @@
 /*!
  *  @brief  Instantiates a new PM25AQI class
  */
-Adafruit_PM25AQI::Adafruit_PM25AQI() {}
+Adafruit_PM25_Base::Adafruit_PM25_Base() {}
 
-bool Adafruit_PM25AQI::read(PM25_AQI_Data *data) {
+bool Adafruit_PM25_Base::read(PM25_AQI_Data *data) {
   return false; // Base class implementation - should be overridden
 }
 
 // Move the common buffer processing logic to base class
-bool Adafruit_PM25AQI::process_buffer(uint8_t *buffer, size_t bufLen, PM25_AQI_Data *data) {
+bool Adafruit_PM25_Base::process_buffer(uint8_t *buffer, size_t bufLen, PM25_AQI_Data *data) {
   uint16_t sum = 0;
   uint8_t csum = 0;
   bool is_pm1006 = false;
@@ -101,23 +101,23 @@ bool Adafruit_PM25AQI::process_buffer(uint8_t *buffer, size_t bufLen, PM25_AQI_D
 }
 
 // I2C Implementation
-Adafruit_PM25AQI_I2C::Adafruit_PM25AQI_I2C() : Adafruit_PM25AQI() {}
+Adafruit_PM25_I2C::Adafruit_PM25_I2C() : Adafruit_PM25_Base() {}
 
-Adafruit_PM25AQI_I2C::~Adafruit_PM25AQI_I2C() {
+Adafruit_PM25_I2C::~Adafruit_PM25_I2C() {
   if (i2c_dev) {
     delete i2c_dev;
   }
 }
 
-bool Adafruit_PM25AQI_I2C::begin(TwoWire *theWire, uint8_t addr) {
+bool Adafruit_PM25_I2C::begin(TwoWire *theWire, uint8_t addr) {
   if (i2c_dev) {
-    ~Adafruit_PM25AQI_I2C();
+    ~Adafruit_PM25_I2C();
   }
   i2c_dev = new Adafruit_I2CDevice(addr, theWire);
   return i2c_dev->begin();
 }
 
-bool Adafruit_PM25AQI_I2C::read(PM25_AQI_Data *data) {
+bool Adafruit_PM25_I2C::read(PM25_AQI_Data *data) {
   uint8_t buffer[32];
   
   if (!i2c_dev || !i2c_dev->read(buffer, 32)) {
@@ -127,18 +127,23 @@ bool Adafruit_PM25AQI_I2C::read(PM25_AQI_Data *data) {
   return process_buffer(buffer, sizeof(buffer), data);
 }
 
-// UART Implementation
-Adafruit_PM25AQI_UART::Adafruit_PM25AQI_UART() : Adafruit_PM25AQI() {}
+// Plantower PMSA003I I2C Implementation
+Adafruit_PM25_I2C_PMSA003I::Adafruit_PM25_I2C_PMSA003I() : Adafruit_PM25_I2C() {}
 
-bool Adafruit_PM25AQI_UART::begin(Stream *theStream) {
+
+// UART Implementation
+Adafruit_PM25_UART::Adafruit_PM25_UART() : Adafruit_PM25_Base() {}
+
+bool Adafruit_PM25_UART::begin(Stream *theStream) {
   serial_dev = theStream;
   return true;
 }
 
-// Plantower UART Implementation
-Adafruit_PM25AQI_UART_Plantower::Adafruit_PM25AQI_UART_Plantower() : Adafruit_PM25AQI_UART() {}
 
-bool Adafruit_PM25AQI_UART_Plantower::read(PM25_AQI_Data *data) {
+// Plantower PMS5003 UART Implementation
+Adafruit_PM25_UART_PMS5003::Adafruit_PM25_UART_PMS5003() : Adafruit_PM25_UART() {}
+
+bool Adafruit_PM25_UART_PMS5003::read(PM25_AQI_Data *data) {
   uint8_t buffer[32];
   
   if (!serial_dev || !serial_dev->available()) {
@@ -168,8 +173,9 @@ bool Adafruit_PM25AQI_UART_Plantower::read(PM25_AQI_Data *data) {
   return process_buffer(buffer, sizeof(buffer), data);
 }
 
-// PM1006 UART Implementation
-Adafruit_PM25AQI_UART_PM1006::Adafruit_PM25AQI_UART_PM1006() : Adafruit_PM25AQI_UART() {}
+
+// Cubit PM1006 UART Implementation
+Adafruit_PM25AQI_UART_PM1006::Adafruit_PM25AQI_UART_PM1006() : Adafruit_PM25_UART() {}
 
 bool Adafruit_PM25AQI_UART_PM1006::read(PM25_AQI_Data *data) {
   uint8_t buffer[20];  // PM1006 uses smaller buffer
@@ -201,13 +207,14 @@ bool Adafruit_PM25AQI_UART_PM1006::read(PM25_AQI_Data *data) {
   return process_buffer(buffer, sizeof(buffer), data);
 }
 
+
 /*!
  *  @brief  Get AQI of PM2.5 in US standard
  *  @param  concentration
  *          the environmental concentration of pm2.5 in ug/m3
  *  @return AQI number. 0 to 500 for valid calculation. 99999 for out of range.
  */
-uint16_t Adafruit_PM25AQI::pm25_aqi_us(float concentration) {
+uint16_t Adafruit_PM25_Base::pm25_aqi_us(float concentration) {
   float c;
   float AQI;
   c = (floor(10 * concentration)) / 10;
@@ -239,7 +246,7 @@ uint16_t Adafruit_PM25AQI::pm25_aqi_us(float concentration) {
  *          the environmental concentration of pm10 in ug/m3
  *  @return AQI number. 0 to 500 for valid calculation. 99999 for out of range.
  */
-uint16_t Adafruit_PM25AQI::pm100_aqi_us(float concentration) {
+uint16_t Adafruit_PM25_Base::pm100_aqi_us(float concentration) {
   float c;
   float AQI;
   c = concentration;
@@ -271,7 +278,7 @@ uint16_t Adafruit_PM25AQI::pm100_aqi_us(float concentration) {
  *          the environmental concentration of pm2.5 in ug/m3
  *  @return AQI number. 0 to 500 for valid calculation. 99999 for out of range.
  */
-uint16_t Adafruit_PM25AQI::pm25_aqi_china(float concentration) {
+uint16_t Adafruit_PM25_Base::pm25_aqi_china(float concentration) {
   float c;
   float AQI;
   c = concentration;
@@ -303,7 +310,7 @@ uint16_t Adafruit_PM25AQI::pm25_aqi_china(float concentration) {
  *          the environmental concentration of pm10 in ug/m3
  *  @return AQI number. 0 to 500 for valid calculation. 99999 for out of range.
  */
-uint16_t Adafruit_PM25AQI::pm100_aqi_china(float concentration) {
+uint16_t Adafruit_PM25_Base::pm100_aqi_china(float concentration) {
   float c;
   float AQI;
   c = concentration;
@@ -339,7 +346,7 @@ uint16_t Adafruit_PM25AQI::pm100_aqi_china(float concentration) {
  *          the concentration value to be calculated
  *  @return Calculated AQI value
  */
-float Adafruit_PM25AQI::linear(uint16_t aqi_high, uint16_t aqi_low,
+float Adafruit_PM25_Base::linear(uint16_t aqi_high, uint16_t aqi_low,
                                float conc_high, float conc_low,
                                float concentration) {
   float f;

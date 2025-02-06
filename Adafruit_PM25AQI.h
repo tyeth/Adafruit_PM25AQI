@@ -53,14 +53,16 @@ typedef struct PMSAQIdata {
 
 } PM25_AQI_Data;
 
+
+
 /*!
- *  @brief  Class that stores state and functions for interacting with
- *          PM2.5 Air Quality Sensor
+ *  @brief  Base class that stores state and functions for 
+ *          interacting with I2C/UART PM2.5 Air Quality Sensors
  */
-class Adafruit_PM25AQI {
+class Adafruit_PM25_Base {
 public:
-  Adafruit_PM25AQI();
-  virtual ~Adafruit_PM25AQI() = default;
+  Adafruit_PM25_Base();
+  virtual ~Adafruit_PM25_Base() = default;
   
   virtual bool begin() = 0;
   virtual bool read(PM25_AQI_Data *data);
@@ -76,10 +78,10 @@ protected:
   bool process_buffer(uint8_t *buffer, size_t bufLen, PM25_AQI_Data *data);
 };
 
-class Adafruit_PM25AQI_I2C : public Adafruit_PM25AQI {
+class Adafruit_PM25_I2C : public Adafruit_PM25_Base {
 public:
-  Adafruit_PM25AQI_I2C();
-  virtual ~Adafruit_PM25AQI_I2C();
+  Adafruit_PM25_I2C();
+  virtual ~Adafruit_PM25_I2C();
   bool begin(TwoWire *theWire = &Wire, uint8_t addr = PMSA003I_I2CADDR_DEFAULT);
   virtual bool begin() override { return begin(&Wire); }
   virtual bool read(PM25_AQI_Data *data) override;
@@ -88,10 +90,18 @@ private:
   Adafruit_I2CDevice *i2c_dev = NULL;
 };
 
-class Adafruit_PM25AQI_UART : public Adafruit_PM25AQI {
+/*! 
+ *  @brief  Plantower PMSA003I Driver (https://adafru.it/4632)
+ */
+class Adafruit_PM25_I2C_PMSA003I : public Adafruit_PM25_I2C {
 public:
-  Adafruit_PM25AQI_UART();
-  virtual ~Adafruit_PM25AQI_UART() = default;
+  Adafruit_PM25_I2C_PMSA003I();
+};
+
+class Adafruit_PM25_UART : public Adafruit_PM25_Base {
+public:
+  Adafruit_PM25_UART();
+  virtual ~Adafruit_PM25_UART() = default;
   bool begin(Stream *theStream);
   virtual bool begin() override { return false; } // Must use begin(Stream*)
   virtual bool read(PM25_AQI_Data *data) override = 0; // Made pure virtual
@@ -100,13 +110,19 @@ protected:
   Stream *serial_dev = NULL;
 };
 
-class Adafruit_PM25AQI_UART_Plantower : public Adafruit_PM25AQI_UART {
+/*! 
+ *  @brief  Plantower PMS5003 Driver (https://adafru.it/3686)
+ */
+class Adafruit_PM25_UART_PMS5003 : public Adafruit_PM25_UART {
 public:
-  Adafruit_PM25AQI_UART_Plantower();
+  Adafruit_PM25_UART_PMS5003();
   virtual bool read(PM25_AQI_Data *data) override;
 };
 
-class Adafruit_PM25AQI_UART_PM1006 : public Adafruit_PM25AQI_UART {
+/*!
+ *  @brief  Cubit PM1006 Driver (Included in IKEA Vindriktning)
+ */
+class Adafruit_PM25AQI_UART_PM1006 : public Adafruit_PM25_UART {
 public:
   Adafruit_PM25AQI_UART_PM1006();
   virtual bool read(PM25_AQI_Data *data) override;
