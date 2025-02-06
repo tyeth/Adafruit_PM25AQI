@@ -60,8 +60,15 @@ typedef struct PMSAQIdata {
 class Adafruit_PM25AQI {
 public:
   Adafruit_PM25AQI();
+  ~Adafruit_PM25AQI();
+  
+  // Add deprecation warnings
+  [[deprecated("Please use Adafruit_PM25AQI_PMSA003I directly")]]
   bool begin_I2C(TwoWire *theWire = &Wire);
+  
+  [[deprecated("Please use appropriate UART driver class directly")]]
   bool begin_UART(Stream *theStream);
+  
   bool read(PM25_AQI_Data *data);
 
   uint16_t pm25_aqi_us(float concentration);
@@ -72,9 +79,8 @@ public:
                float conc_low, float concentration);
 
 private:
-  Adafruit_I2CDevice *i2c_dev = NULL;
-  Stream *serial_dev = NULL;
-  uint8_t _readbuffer[32];
+  Adafruit_PM25AQI_Base *driver = nullptr;
+  // Remove old private members as they're now handled by specific drivers
 };
 
 #endif
