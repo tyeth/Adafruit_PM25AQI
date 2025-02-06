@@ -44,21 +44,21 @@ bool Adafruit_PM25_Base::read(PM25_AQI_Data *data) {
 bool Adafruit_PM25_Base::process_buffer(uint8_t *buffer, size_t bufLen, PM25_AQI_Data *data) {
   uint16_t sum = 0;
   uint8_t csum = 0;
-  bool is_pm1006 = false;
+  bool is_pm1006 = bufLen == 20;
 
   if (!data) {
     return false;
   }
 
-  // Check for PM1006 sensor
-  if (buffer[0] == 0x16) {
-    is_pm1006 = true;
-    bufLen = 20;
-  }
+  // // Check for PM1006 sensor
+  // if (bufLen == 20) {
+  //   is_pm1006 = true;
+  //   bufLen = 20;
+  // }
+
 
   // Validate headers
-  if ((!is_pm1006 && (buffer[0] != 0x42 || buffer[1] != 0x4d)) ||
-      (is_pm1006 && (buffer[0] != 0x16 || buffer[1] != 0x11 || buffer[2] != 0x0B))) {
+  if (!validate_starting_bytes(buffer, bufLen)) {
     return false;
   }
 
@@ -90,7 +90,8 @@ bool Adafruit_PM25_Base::process_buffer(uint8_t *buffer, size_t bufLen, PM25_AQI
   if ((is_pm1006 && csum != 0) || (!is_pm1006 && sum != data->checksum)) {
     return false;
   }
-
+  
+  Serial.println("Checksum passed, doing AQI Calcs");
   // Calculate AQI values
   data->aqi_pm25_us = pm25_aqi_us(data->pm25_env);
   data->aqi_pm25_china = pm25_aqi_china(data->pm25_env);
@@ -109,7 +110,7 @@ Adafruit_PM25_I2C::~Adafruit_PM25_I2C() {
   }
 }
 
-bool Adafruit_PM25_I2C::begin(TwoWire *theWire, uint8_t addr) {
+bool Adafruit_PM25_I2C::begin_I2C(TwoWire *theWire, uint8_t addr) {
   if (i2c_dev) {
     ~Adafruit_PM25_I2C();
   }
@@ -118,9 +119,7 @@ bool Adafruit_PM25_I2C::begin(TwoWire *theWire, uint8_t addr) {
 }
 
 bool Adafruit_PM25_I2C::read(PM25_AQI_Data *data) {
-  uint8_t buffer[32];
-  
-  if (!i2c_dev || !i2c_dev->read(buffer, 32)) {
+  if (!i2c_dev || !i2c_dev->read(buffer, bufLen)) {
     return false;
   }
 
@@ -134,7 +133,7 @@ Adafruit_PM25_I2C_PMSA003I::Adafruit_PM25_I2C_PMSA003I() : Adafruit_PM25_I2C() {
 // UART Implementation
 Adafruit_PM25_UART::Adafruit_PM25_UART() : Adafruit_PM25_Base() {}
 
-bool Adafruit_PM25_UART::begin(Stream *theStream) {
+bool Adafruit_PM25_UART::begin_UART(Stream *theStream) {
   serial_dev = theStream;
   return true;
 }
@@ -144,7 +143,6 @@ bool Adafruit_PM25_UART::begin(Stream *theStream) {
 Adafruit_PM25_UART_PMS5003::Adafruit_PM25_UART_PMS5003() : Adafruit_PM25_UART() {}
 
 bool Adafruit_PM25_UART_PMS5003::read(PM25_AQI_Data *data) {
-  uint8_t buffer[32];
   
   if (!serial_dev || !serial_dev->available()) {
     return false;
@@ -165,12 +163,12 @@ bool Adafruit_PM25_UART_PMS5003::read(PM25_AQI_Data *data) {
     return false;
   }
 
-  if (serial_dev->available() < sizeof(buffer)) {
+  if (serial_dev->available() < bufLen) {
     return false;
   }
 
-  serial_dev->readBytes(buffer, sizeof(buffer));
-  return process_buffer(buffer, sizeof(buffer), data);
+  serial_dev->readBytes(buffer, bufLen);
+  return process_buffer(buffer, bufLen, data);
 }
 
 
@@ -178,12 +176,11 @@ bool Adafruit_PM25_UART_PMS5003::read(PM25_AQI_Data *data) {
 Adafruit_PM25AQI_UART_PM1006::Adafruit_PM25AQI_UART_PM1006() : Adafruit_PM25_UART() {}
 
 bool Adafruit_PM25AQI_UART_PM1006::read(PM25_AQI_Data *data) {
-  uint8_t buffer[20];  // PM1006 uses smaller buffer
   
   if (!serial_dev || !serial_dev->available()) {
     return false;
   }
-
+  
   // Skip until we find the start byte 0x16
   int skipped = 0;
   while ((skipped < 32) && (serial_dev->peek() != 0x16)) {
@@ -193,16 +190,17 @@ bool Adafruit_PM25AQI_UART_PM1006::read(PM25_AQI_Data *data) {
       return false;
     }
   }
-
+  
   if (serial_dev->peek() != 0x16) {
     serial_dev->read();
     return false;
   }
-
+  
   if (serial_dev->available() < sizeof(buffer)) {
     return false;
   }
-
+  
+  // PM1006 uses smaller buffer
   serial_dev->readBytes(buffer, sizeof(buffer));
   return process_buffer(buffer, sizeof(buffer), data);
 }

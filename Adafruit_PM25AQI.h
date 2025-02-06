@@ -63,8 +63,7 @@ class Adafruit_PM25_Base {
 public:
   Adafruit_PM25_Base();
   virtual ~Adafruit_PM25_Base() = default;
-  
-  virtual bool begin() = 0;
+
   virtual bool read(PM25_AQI_Data *data);
 
   uint16_t pm25_aqi_us(float concentration);
@@ -72,18 +71,22 @@ public:
   uint16_t pm100_aqi_us(float concentration);
   uint16_t pm100_aqi_china(float concentration);
 
-protected:
+private:
   float linear(uint16_t aqi_high, uint16_t aqi_low, float conc_high,
                float conc_low, float concentration);
   bool process_buffer(uint8_t *buffer, size_t bufLen, PM25_AQI_Data *data);
+  bool validate_checksum(uint8_t *buffer, size_t bufLen, uint16_t sum);
+  bool validate_starting_bytes(uint8_t *buffer, size_t bufLen);
+  uint8_t buffer[32];
+  size_t bufLen = sizeof(buffer);
 };
 
 class Adafruit_PM25_I2C : public Adafruit_PM25_Base {
 public:
   Adafruit_PM25_I2C();
   virtual ~Adafruit_PM25_I2C();
-  bool begin(TwoWire *theWire = &Wire, uint8_t addr = PMSA003I_I2CADDR_DEFAULT);
-  virtual bool begin() override { return begin(&Wire); }
+  virtual bool begin_I2C(TwoWire *theWire = &Wire, uint8_t addr = PMSA003I_I2CADDR_DEFAULT);
+  virtual bool begin_I2C() { return begin_I2C(&Wire); }
   virtual bool read(PM25_AQI_Data *data) override;
 
 private:
@@ -102,11 +105,11 @@ class Adafruit_PM25_UART : public Adafruit_PM25_Base {
 public:
   Adafruit_PM25_UART();
   virtual ~Adafruit_PM25_UART() = default;
-  bool begin(Stream *theStream);
-  virtual bool begin() override { return false; } // Must use begin(Stream*)
+  bool begin_UART(Stream *theStream);
+  virtual bool begin_UART() override { return false; } // Must use begin_UART(Stream*)
   virtual bool read(PM25_AQI_Data *data) override = 0; // Made pure virtual
 
-protected:
+private:
   Stream *serial_dev = NULL;
 };
 
@@ -126,6 +129,10 @@ class Adafruit_PM25AQI_UART_PM1006 : public Adafruit_PM25_UART {
 public:
   Adafruit_PM25AQI_UART_PM1006();
   virtual bool read(PM25_AQI_Data *data) override;
+
+private:
+  uint8_t buffer[20];
+  size_t bufLen = sizeof(buffer);
 };
 
 #endif

@@ -3,6 +3,8 @@ Doxyfile*
 doxygen_sqlite3.db
 html# osx
 .DS_Store
+.pio
+.vscode
 
 # doxygen
 Doxyfile*
