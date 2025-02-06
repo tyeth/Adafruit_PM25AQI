@@ -34,7 +34,51 @@
 /*!
  *  @brief  Instantiates a new PM25AQI class
  */
-Adafruit_PM25_Base::Adafruit_PM25_Base() {}
+Adafruit_PM25AQI::Adafruit_PM25AQI() {
+  #warning "Using Adafruit_PM25AQI directly is deprecated, please use driver classes: \
+  Cubit PM1006 = Adafruit_PM25_UART_PM1006                                            \
+  Plantower PMS5003 = Adafruit_PM25_UART_PMS5003                                      \
+  Plantower PMSA003I =  Adafruit_PM25_I2C_PMSA003I"
+}
+
+bool Adafruit_PM25AQI::begin_I2C(TwoWire *theWire, uint8_t addr) {
+  if (pm_i2c_dev) {
+    delete pm_i2c_dev;
+  }
+  pm_i2c_dev = new Adafruit_PM25_I2C_PMSA003I();
+  return begin_I2C(theWire, addr);
+
+}
+
+bool Adafruit_PM25AQI::begin_UART(Stream *theStream) {
+  if (pm_uart_dev) {
+    delete pm_uart_dev;
+  }
+  // verify start bytes until device known, then select correct device:
+  
+    if (!theStream->available()) {
+      return false;
+    }
+    for (uint8_t i = 0; i < 5; i++)
+    {
+      if (theStream->peek() == 0x42) {
+        pm_uart_dev = new Adafruit_PM25_UART_PMS5003();
+        break;
+      } else if (theStream->peek() == 0x16) {
+        pm_uart_dev = new Adafruit_PM25_UART_PM1006();
+        break;
+      } else {
+        theStream->read();
+      }
+    }
+  if (!pm_uart_dev) {
+    return false;
+  }
+  return pm_uart_dev->begin_UART(theStream);
+}
+
+
+ Adafruit_PM25_Base::Adafruit_PM25_Base() {}
 
 bool Adafruit_PM25_Base::read(PM25_AQI_Data *data) {
   return false; // Base class implementation - should be overridden
@@ -173,9 +217,9 @@ bool Adafruit_PM25_UART_PMS5003::read(PM25_AQI_Data *data) {
 
 
 // Cubit PM1006 UART Implementation
-Adafruit_PM25AQI_UART_PM1006::Adafruit_PM25AQI_UART_PM1006() : Adafruit_PM25_UART() {}
+Adafruit_PM25_UART_PM1006::Adafruit_PM25_UART_PM1006() : Adafruit_PM25_UART() {}
 
-bool Adafruit_PM25AQI_UART_PM1006::read(PM25_AQI_Data *data) {
+bool Adafruit_PM25_UART_PM1006::read(PM25_AQI_Data *data) {
   
   if (!serial_dev || !serial_dev->available()) {
     return false;

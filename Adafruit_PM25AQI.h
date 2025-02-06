@@ -53,8 +53,6 @@ typedef struct PMSAQIdata {
 
 } PM25_AQI_Data;
 
-
-
 /*!
  *  @brief  Base class that stores state and functions for 
  *          interacting with I2C/UART PM2.5 Air Quality Sensors
@@ -63,7 +61,9 @@ class Adafruit_PM25_Base {
 public:
   Adafruit_PM25_Base();
   virtual ~Adafruit_PM25_Base() = default;
-
+  virtual bool begin_UART(Stream *theStream) { return false; }
+  virtual bool begin_UART() { return false; } // Must use begin_UART(Stream*)
+  virtual bool begin_I2C(TwoWire *theWire = &Wire, uint8_t addr = PMSA003I_I2CADDR_DEFAULT) { return false; };
   virtual bool read(PM25_AQI_Data *data);
 
   uint16_t pm25_aqi_us(float concentration);
@@ -71,7 +71,7 @@ public:
   uint16_t pm100_aqi_us(float concentration);
   uint16_t pm100_aqi_china(float concentration);
 
-private:
+protected:
   float linear(uint16_t aqi_high, uint16_t aqi_low, float conc_high,
                float conc_low, float concentration);
   bool process_buffer(uint8_t *buffer, size_t bufLen, PM25_AQI_Data *data);
@@ -79,18 +79,17 @@ private:
   bool validate_starting_bytes(uint8_t *buffer, size_t bufLen);
   uint8_t buffer[32];
   size_t bufLen = sizeof(buffer);
+  
+  Stream *serial_dev = NULL;
+  Adafruit_I2CDevice *i2c_dev = NULL;
 };
 
 class Adafruit_PM25_I2C : public Adafruit_PM25_Base {
 public:
   Adafruit_PM25_I2C();
-  virtual ~Adafruit_PM25_I2C();
-  virtual bool begin_I2C(TwoWire *theWire = &Wire, uint8_t addr = PMSA003I_I2CADDR_DEFAULT);
-  virtual bool begin_I2C() { return begin_I2C(&Wire); }
+  ~Adafruit_PM25_I2C();
+  virtual bool begin_I2C(TwoWire *theWire = &Wire, uint8_t addr = PMSA003I_I2CADDR_DEFAULT) override;
   virtual bool read(PM25_AQI_Data *data) override;
-
-private:
-  Adafruit_I2CDevice *i2c_dev = NULL;
 };
 
 /*! 
@@ -106,11 +105,7 @@ public:
   Adafruit_PM25_UART();
   virtual ~Adafruit_PM25_UART() = default;
   bool begin_UART(Stream *theStream);
-  virtual bool begin_UART() override { return false; } // Must use begin_UART(Stream*)
   virtual bool read(PM25_AQI_Data *data) override = 0; // Made pure virtual
-
-private:
-  Stream *serial_dev = NULL;
 };
 
 /*! 
@@ -125,14 +120,31 @@ public:
 /*!
  *  @brief  Cubit PM1006 Driver (Included in IKEA Vindriktning)
  */
-class Adafruit_PM25AQI_UART_PM1006 : public Adafruit_PM25_UART {
+class Adafruit_PM25_UART_PM1006 : public Adafruit_PM25_UART {
 public:
-  Adafruit_PM25AQI_UART_PM1006();
+  Adafruit_PM25_UART_PM1006();
   virtual bool read(PM25_AQI_Data *data) override;
 
 private:
   uint8_t buffer[20];
   size_t bufLen = sizeof(buffer);
+};
+
+
+
+class Adafruit_PM25AQI : public Adafruit_PM25_Base {
+  public:
+    Adafruit_PM25AQI();
+    virtual ~Adafruit_PM25AQI() = default;
+    virtual bool read(PM25_AQI_Data *data) override;
+    virtual bool begin_UART(Stream *theStream) override;
+    bool begin_I2C(TwoWire *theWire = &Wire, uint8_t addr = PMSA003I_I2CADDR_DEFAULT) override;
+  
+  private:
+    bool is_i2c = false;
+    bool is_pm1006 = false;
+    Adafruit_PM25_UART *pm_uart_dev = NULL;
+    Adafruit_PM25_I2C *pm_i2c_dev = NULL;
 };
 
 #endif
