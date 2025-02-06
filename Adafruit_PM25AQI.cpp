@@ -29,6 +29,9 @@
  */
 
 #include "Adafruit_PM25AQI.h"
+#include "Adafruit_PM25AQI_PMSA003I.h"
+#include "Adafruit_PM25AQI_UART_PM1006.h"
+#include "Adafruit_PM25AQI_UART_PMS5003.h"
 #include <math.h>
 
 /*!
@@ -36,22 +39,25 @@
  */
 Adafruit_PM25AQI::Adafruit_PM25AQI() {}
 
+Adafruit_PM25AQI::~Adafruit_PM25AQI() {
+  if (driver) {
+    delete driver;
+    driver = nullptr;
+  }
+}
+
 /*!
  *  @brief  Setups the hardware and detects a valid PMSA003I. Initializes I2C.
  *  @param  theWire
  *          Optional pointer to I2C interface, otherwise use Wire
  *  @return True if PMSA003I found on I2C, False if something went wrong!
  */
-bool Adafruit_PM25AQI::begin_I2C(TwoWire *theWire) {
-  if (!i2c_dev) {
-    i2c_dev = new Adafruit_I2CDevice(PMSA003I_I2CADDR_DEFAULT, theWire);
+bool Adafruit_PM25AQI::begin_I2C(TwoWire *theWire, uint8_t addr) {
+  if (driver) {
+    delete driver;
   }
-
-  if (!i2c_dev->begin()) {
-    return false;
-  }
-
-  return true;
+  driver = new Adafruit_PM25AQI_PMSA003I();
+  return ((Adafruit_PM25AQI_PMSA003I *)driver)->begin_I2C(theWire, addr);
 }
 
 /*!
@@ -60,10 +66,28 @@ bool Adafruit_PM25AQI::begin_I2C(TwoWire *theWire) {
  *          Pointer to Stream (HardwareSerial/SoftwareSerial) interface
  *  @return True
  */
-bool Adafruit_PM25AQI::begin_UART(Stream *theSerial) {
-  serial_dev = theSerial;
+bool Adafruit_PM25AQI::begin_UART(Stream *theStream) {
+  if (driver) {
+    delete driver;
+  }
 
-  return true;
+  for (uint8_t i = 0; i < 32; i++) {
+    if (theStream->available()) {
+      if (theStream->peek() == 0x42) {
+        driver = new Adafruit_PM25AQI_UART_PMS5003();
+        break;
+      } else if (theStream->peek() == 0x16) {
+        driver = new Adafruit_PM25AQI_UART_PM1006();
+        break;
+      } else {
+        theStream->read();
+      }
+    }
+  }
+  if (!driver) {
+    return false;
+  }  
+  return ((Adafruit_PM25AQI_UART_Base *)driver)->begin_UART(theStream);
 }
 
 /*!
@@ -73,121 +97,10 @@ bool Adafruit_PM25AQI::begin_UART(Stream *theSerial) {
  *  @return True on successful read, false if timed out or bad data
  */
 bool Adafruit_PM25AQI::read(PM25_AQI_Data *data) {
-  uint8_t buffer[32];
-  size_t bufLen = sizeof(buffer);
-  uint16_t sum = 0;
-  uint8_t csum = 0;
-  bool is_pm1006 = false;
-
-  if (!data) {
+  if (!driver || !data) {
     return false;
   }
-
-  if (i2c_dev) { // ok using i2c?
-    if (!i2c_dev->read(buffer, 32)) {
-      return false;
-    }
-  } else if (serial_dev) { // ok using uart
-    if (!serial_dev->available()) {
-      Serial.println("PM25: Serial data unavailable");
-      return false;
-    }
-
-    int skipped = 0;
-    while ((skipped < 32) && (serial_dev->peek() != 0x42) &&
-           (serial_dev->peek() != 0x16)) {
-      serial_dev->read();
-      skipped++;
-      if (!serial_dev->available()) {
-        Serial.println("PM25: Serial data unavailable part way through");
-        return false;
-      }
-    }
-
-    // Check for the start character in the stream for both sensors
-    if ((serial_dev->peek() != 0x42) && (serial_dev->peek() != 0x16)) {
-      Serial.println("PM25: Serial peek failed");
-      serial_dev->read();
-      return false;
-    }
-
-    // Are we using the Cubic PM1006 sensor?
-    if (serial_dev->peek() == 0x16) {
-      is_pm1006 = true; // Set flag to indicate we are using the PM1006
-      bufLen =
-          20; // Reduce buffer read length to 20 bytes. Last 12 bytes ignored.
-    }
-
-    // Are there enough bytes to read from?
-    if (serial_dev->available() < bufLen) {
-      Serial.println("PM25: Serial data too short");
-      return false;
-    }
-
-    // Read all available bytes from the serial stream
-    serial_dev->readBytes(buffer, bufLen);
-  } else {
-    return false;
-  }
-  Serial.println("PM25: Serial data fetch done");
-
-  // Validate start byte is correct if using Adafruit PM sensors
-  if ((!is_pm1006 && (buffer[0] != 0x42 || buffer[1] != 0x4d))) {
-    Serial.println("PM25: Serial data start incorrect (not pm1006)");
-    return false;
-  }
-
-  // Validate start header is correct if using Cubic PM1006 sensor
-  if (is_pm1006 &&
-      (buffer[0] != 0x16 || buffer[1] != 0x11 || buffer[2] != 0x0B)) {
-    Serial.println("PM25: Serial data start incorrect (pm1006)");
-    return false;
-  }
-
-  // Calculate checksum
-  if (!is_pm1006) {
-    for (uint8_t i = 0; i < 30; i++) {
-      sum += buffer[i];
-    }
-  } else {
-    for (uint8_t i = 0; i < bufLen; i++) {
-      csum += buffer[i];
-    }
-  }
-
-  // Since header and checksum are OK, parse data from the buffer
-  if (!is_pm1006) {
-    // The data comes in endian'd, this solves it so it works on all platforms
-    uint16_t buffer_u16[15];
-    for (uint8_t i = 0; i < 15; i++) {
-      buffer_u16[i] = buffer[2 + i * 2 + 1];
-      buffer_u16[i] += (buffer[2 + i * 2] << 8);
-    }
-    // put it into a nice struct :)
-    memcpy((void *)data, (void *)buffer_u16, 30);
-  } else {
-    // Cubic PM1006 sensor only produces a pm25_env reading
-    data->pm25_env = (buffer[5] << 8) | buffer[6];
-    data->checksum = sum;
-  }
-
-  // Validate checksum
-  if ((is_pm1006 && csum != 0) || (!is_pm1006 && sum != data->checksum)) {
-    Serial.println("PM25: Serial data checksum incorrect");
-    return false;
-  }
-
-  Serial.println("PM25: Serial data checks complete, about to calculate AQIs");
-
-  // convert concentration to AQI
-  data->aqi_pm25_us = pm25_aqi_us(data->pm25_env);
-  data->aqi_pm25_china = pm25_aqi_china(data->pm25_env);
-  data->aqi_pm100_us = pm100_aqi_us(data->pm100_env);
-  data->aqi_pm100_china = pm100_aqi_china(data->pm100_env);
-  Serial.println("PM25: Calculated AQIs, returning TRUE for read()");
-
-  // success!
-  return true;
+  return driver->read(data);
 }
 
 /*!

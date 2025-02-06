@@ -1,13 +1,10 @@
-#ifndef ADAFRUIT_PM25AQI_PMSA003I_H
-#define ADAFRUIT_PM25AQI_PMSA003I_H
+#ifndef ADAFRUIT_PM25AQI_UART_PMS5003_H
+#define ADAFRUIT_PM25AQI_UART_PMS5003_H
 
-#include "Adafruit_PM25AQI_I2C_Base.h"
+#include "Adafruit_PM25AQI_UART_Base.h"
 
-#define PMSA003I_I2CADDR_DEFAULT 0x12
-
-class Adafruit_PM25AQI_PMSA003I : public Adafruit_PM25AQI_I2C_Base {
+class Adafruit_PM25AQI_UART_PMS5003 : public Adafruit_PM25AQI_UART_Base {
 public:
-  Adafruit_PM25AQI_PMSA003I();
   bool read(PM25_AQI_Data *data) override;
 
 protected:

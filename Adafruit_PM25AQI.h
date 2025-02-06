@@ -64,7 +64,7 @@ public:
   
   // Add deprecation warnings
   [[deprecated("Please use Adafruit_PM25AQI_PMSA003I directly")]]
-  bool begin_I2C(TwoWire *theWire = &Wire);
+  bool begin_I2C(TwoWire *theWire = &Wire, uint8_t addr = PMSA003I_I2CADDR_DEFAULT);
   
   [[deprecated("Please use appropriate UART driver class directly")]]
   bool begin_UART(Stream *theStream);
