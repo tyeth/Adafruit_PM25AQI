@@ -1,5 +1,6 @@
 #include "Adafruit_PM25AQI_UART_PM1006.h"
 
+Adafruit_PM25AQI_UART_PM1006::Adafruit_PM25AQI_UART_PM1006() {}
 
 bool Adafruit_PM25AQI_UART_PM1006::verify_starting_bytes(uint8_t *buffer) {
   return (buffer[0] == 0x16 && buffer[1] == 0x11 && buffer[2] == 0x0B);

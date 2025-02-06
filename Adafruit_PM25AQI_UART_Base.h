@@ -1,21 +1,22 @@
 #ifndef ADAFRUIT_PM25AQI_UART_BASE_H
 #define ADAFRUIT_PM25AQI_UART_BASE_H
 
-#include "Adafruit_PM25AQI_Base.h"
+#include "Adafruit_PM25AQI.h"
 
 class Adafruit_PM25AQI_UART_Base : public Adafruit_PM25AQI_Base {
 public:
-  bool begin_UART(Stream *theStream);
+  ~Adafruit_PM25AQI_UART_Base() override;  // Need this for serial_dev cleanup
+  bool begin_I2C(TwoWire *theWire = &Wire, uint8_t addr = 0x12) override { return false; }
+  bool begin_UART(Stream *theStream) override;
   bool read(PM25_AQI_Data *data) override;
 
 protected:
-  Stream *serial_dev = nullptr;
-  virtual bool verify_starting_bytes(uint8_t *buffer) = 0;
-  virtual bool verify_checksum(uint8_t *buffer, size_t bufLen) = 0;
-  virtual void decode_data(uint8_t *buffer, PM25_AQI_Data *data) = 0;
-  
+  // virtual bool verify_starting_bytes(uint8_t *buffer) override;
+  // virtual bool verify_checksum(uint8_t *buffer, size_t bufLen) override;
+  // virtual void decode_data(uint8_t *buffer, PM25_AQI_Data *data) override;
   bool read_uart_data(uint8_t *buffer, size_t bufLen);
-
+  
+  Stream *serial_dev = nullptr;
   static const uint8_t BUFFER_LENGTH = 32;
   uint8_t _buffer[BUFFER_LENGTH];
 };

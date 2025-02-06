@@ -1,5 +1,4 @@
-#include "Adafruit_PM25AQI_Base.h"
-
+#include "Adafruit_PM25AQI.h"
 
   bool Adafruit_PM25AQI_Base::verify_starting_bytes(uint8_t *buffer) {
     // PMSA003I uses same protocol as PMS5003

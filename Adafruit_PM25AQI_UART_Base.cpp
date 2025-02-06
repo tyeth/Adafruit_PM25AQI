@@ -1,10 +1,5 @@
 #include "Adafruit_PM25AQI_UART_Base.h"
 
-Adafruit_PM25AQI_UART_Base::Adafruit_PM25AQI_UART_Base() {}
-Adafruit_PM25AQI_UART_Base::Adafruit_PM25AQI_UART_Base(Stream *theStream) {
-    serial_dev = theStream;
-}
-
 Adafruit_PM25AQI_UART_Base::~Adafruit_PM25AQI_UART_Base() {
     if (serial_dev) {
         delete serial_dev;

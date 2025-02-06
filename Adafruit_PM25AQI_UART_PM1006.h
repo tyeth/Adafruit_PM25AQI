@@ -3,14 +3,21 @@
 
 #include "Adafruit_PM25AQI_UART_Base.h"
 
+/*!
+ *  @brief  PM2.5 sensor driver for Cubit PM1006
+ */
 class Adafruit_PM25AQI_UART_PM1006 : public Adafruit_PM25AQI_UART_Base {
 public:
-  bool read(PM25_AQI_Data *data) override;
+  Adafruit_PM25AQI_UART_PM1006();
+  // bool read(PM25_AQI_Data *data) override;
 
 protected:
+  // Must override these because PM1006 protocol is different
   bool verify_starting_bytes(uint8_t *buffer) override;
   bool verify_checksum(uint8_t *buffer, size_t bufLen) override;
   void decode_data(uint8_t *buffer, PM25_AQI_Data *data) override;
+
+private:
   static const uint8_t BUFFER_LENGTH = 20;
   uint8_t _buffer[BUFFER_LENGTH];
 };
