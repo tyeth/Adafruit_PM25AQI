@@ -7,8 +7,8 @@ class Adafruit_PM25AQI_UART_Base : public Adafruit_PM25AQI_Base {
 public:
   ~Adafruit_PM25AQI_UART_Base() override;  // Need this for serial_dev cleanup
   bool begin_I2C(TwoWire *theWire = &Wire, uint8_t addr = 0x12) override { return false; }
-  bool begin_UART(Stream *theStream) override;
-  bool read(PM25_AQI_Data *data) override;
+  virtual bool begin_UART(Stream *theStream) override;
+  virtual bool read(PM25_AQI_Data *data) override;
 
 protected:
   // virtual bool verify_starting_bytes(uint8_t *buffer) override;

@@ -1,6 +1,7 @@
 #include "Adafruit_PM25AQI.h"
 
   Adafruit_PM25AQI_Base::Adafruit_PM25AQI_Base() {
+    PM25AQI_DEBUG_PRINTLN("Base constructor");
     if (_buffer) {
       delete[] _buffer;
     }
@@ -12,12 +13,19 @@
     _buffer = nullptr;
   }
 
+  bool Adafruit_PM25AQI_Base::read(PM25_AQI_Data *data) {
+    PM25AQI_DEBUG_PRINTLN("Base read");
+    return false;
+  }
+
   bool Adafruit_PM25AQI_Base::verify_starting_bytes(uint8_t *buffer) {
+    PM25AQI_DEBUG_PRINTLN("Base verify_starting_bytes");
     // PMSA003I uses same protocol as PMS5003: 0x42 0x4D
     return (buffer[0] == 0x42 && buffer[1] == 0x4D);
   }
   
   bool Adafruit_PM25AQI_Base::verify_checksum(uint8_t *buffer, size_t bufLen) {
+    PM25AQI_DEBUG_PRINTLN("Base verify_checksum");
     uint16_t sum = 0;
     for (uint8_t i = 0; i < 30; i++) {
       sum += buffer[i];
@@ -28,6 +36,7 @@
   }
   
   void Adafruit_PM25AQI_Base::decode_data(uint8_t *buffer, PM25_AQI_Data *data) {
+    PM25AQI_DEBUG_PRINTLN("Base decode_data");
     // The data comes in endian'd, this solves it so it works on all platforms
     uint16_t buffer_u16[15];
     for (uint8_t i = 0; i < 15; i++) {

@@ -78,23 +78,25 @@ bool Adafruit_PM25AQI::begin_UART(Stream *theStream) {
     for (uint8_t i = 0; i < 32; i++) {
       if (theStream->available()) {
         if (theStream->peek() == 0x42) {
-          PM25AQI_DEBUG_PRINTLN("Found PMS5003");
+          PM25AQI_DEBUG_PRINTLN("[Adafruit_PM25AQI::begin_UART] Found PMS5003");
           driver = new Adafruit_PM25AQI_UART_PMS5003();
+          PM25AQI_DEBUG_PRINTLN("[Adafruit_PM25AQI::begin_UART] Trying to begin PMS5003 UART");
           return driver->begin_UART(theStream);
           break;
         } else if (theStream->peek() == 0x16) {
-          PM25AQI_DEBUG_PRINTLN("Found PM1006");
+          PM25AQI_DEBUG_PRINTLN("[Adafruit_PM25AQI::begin_UART] Found PM1006");
           driver = new Adafruit_PM25AQI_UART_PM1006();
+          PM25AQI_DEBUG_PRINTLN("[Adafruit_PM25AQI::begin_UART] Trying to begin PM1006 UART");
           return driver->begin_UART(theStream);
           break;
         } else {
-          PM25AQI_DEBUG_PRINT("Skipping byte: ");
+          PM25AQI_DEBUG_PRINT("[Adafruit_PM25AQI::begin_UART] Skipping byte: ");
           PM25AQI_DEBUG_PRINTLN(theStream->peek(), 16);
           theStream->read();
         }
-        PM25AQI_DEBUG_PRINTLN("Trying another packet");
+        PM25AQI_DEBUG_PRINTLN("[Adafruit_PM25AQI::begin_UART] Trying another packet");
       } else {
-        PM25AQI_DEBUG_PRINTLN("No serial data available, retrying");
+        PM25AQI_DEBUG_PRINTLN("[Adafruit_PM25AQI::begin_UART] No serial data available, retrying in 100ms");
       }
       delay(100);
       retries++;
@@ -110,9 +112,15 @@ bool Adafruit_PM25AQI::begin_UART(Stream *theStream) {
  *  @return True on successful read, false if timed out or bad data
  */
 bool Adafruit_PM25AQI::read(PM25_AQI_Data *data) {
-  if (!driver || !data) {
+  if (!driver) {
+    PM25AQI_DEBUG_PRINTLN("[Adafruit_PM25AQI::read] No driver available");
     return false;
   }
+  if (!data) {
+    PM25AQI_DEBUG_PRINTLN("[Adafruit_PM25AQI::read] No data buffer available");
+    return false;
+  }
+  PM25AQI_DEBUG_PRINTLN("[Adafruit_PM25AQI::read] Reading data via driver");
   return driver->read(data);
 }
 

@@ -51,11 +51,15 @@ bool Adafruit_PM25AQI_UART_Base::read_uart_data(uint8_t *buffer, size_t bufLen) 
   // Read the data
   int8_t returned_bytes = serial_dev->readBytes(buffer, bufLen);
   if (serial_dev->available()) {
-    PM25AQI_DEBUG_PRINT("EXTRA_DATA: Extra serial data available - unable to read_uart_data, flushing: ");
+    PM25AQI_DEBUG_PRINT("EXTRA_DATA: Extra serial data available - in read_uart_data, flushing: ");
+    Serial.flush();
     PM25AQI_DEBUG_PRINTLN(serial_dev->available());
-    while (serial_dev->available()) {
-        serial_dev->read();
-        delay(1);
+    Serial.flush();
+    delay(10);
+    for (size_t i = 0; i < serial_dev->available(); i++)
+    {
+      serial_dev->read();
+      yield();
     }
   }
   if (returned_bytes != bufLen) {
@@ -66,6 +70,7 @@ bool Adafruit_PM25AQI_UART_Base::read_uart_data(uint8_t *buffer, size_t bufLen) 
     PM25AQI_DEBUG_PRINTLN(") - unable to read_uart_data");
     return false;
   }
+  return true;
 }
 
 bool Adafruit_PM25AQI_UART_Base::read(PM25_AQI_Data *data) {
