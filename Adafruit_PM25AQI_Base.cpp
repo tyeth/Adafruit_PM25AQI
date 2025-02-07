@@ -1,7 +1,19 @@
 #include "Adafruit_PM25AQI.h"
 
+  Adafruit_PM25AQI_Base::Adafruit_PM25AQI_Base() {
+    if (_buffer) {
+      delete[] _buffer;
+    }
+    _buffer = new uint8_t[BUFFER_LENGTH];
+  }
+
+  Adafruit_PM25AQI_Base::~Adafruit_PM25AQI_Base() {
+    delete[] _buffer;
+    _buffer = nullptr;
+  }
+
   bool Adafruit_PM25AQI_Base::verify_starting_bytes(uint8_t *buffer) {
-    // PMSA003I uses same protocol as PMS5003
+    // PMSA003I uses same protocol as PMS5003: 0x42 0x4D
     return (buffer[0] == 0x42 && buffer[1] == 0x4D);
   }
   

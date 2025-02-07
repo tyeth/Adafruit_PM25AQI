@@ -10,9 +10,9 @@ public:
   // Adafruit_PM25AQI_PMSA003I();
   bool read(PM25_AQI_Data *data) override;
 
-private:
-  static const uint8_t BUFFER_LENGTH = 32;
-  uint8_t _buffer[BUFFER_LENGTH];
+// protected:
+//   static const uint8_t BUFFER_LENGTH = 32;
+//   uint8_t _buffer[BUFFER_LENGTH];
 };
 
 #endif

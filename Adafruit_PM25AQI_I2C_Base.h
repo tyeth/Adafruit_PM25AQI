@@ -6,6 +6,7 @@
 
 class Adafruit_PM25AQI_I2C_Base : public Adafruit_PM25AQI_Base {
 public:
+  virtual ~Adafruit_PM25AQI_I2C_Base() override;
   bool begin_I2C(TwoWire *theWire, uint8_t addr) override;
   bool begin_UART(Stream *theStream) override { return false; }
 protected:

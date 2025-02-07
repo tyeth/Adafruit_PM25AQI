@@ -56,6 +56,7 @@ Adafruit_PM25AQI::~Adafruit_PM25AQI() {
 bool Adafruit_PM25AQI::begin_I2C(TwoWire *theWire, uint8_t addr) {
   if (driver) {
     delete driver;
+    driver = nullptr;
   }
   driver = new Adafruit_PM25AQI_PMSA003I();
   return driver->begin_I2C(theWire, addr);
@@ -70,32 +71,32 @@ bool Adafruit_PM25AQI::begin_I2C(TwoWire *theWire, uint8_t addr) {
 bool Adafruit_PM25AQI::begin_UART(Stream *theStream) {
   if (driver) {
     delete driver;
+    driver = nullptr;
   }
   uint8_t retries = 0;
   while (!driver && retries < 32) {
     for (uint8_t i = 0; i < 32; i++) {
       if (theStream->available()) {
         if (theStream->peek() == 0x42) {
-          Serial.println("Found PMS5003");
+          PM25AQI_DEBUG_PRINTLN("Found PMS5003");
           driver = new Adafruit_PM25AQI_UART_PMS5003();
           return driver->begin_UART(theStream);
           break;
         } else if (theStream->peek() == 0x16) {
-          Serial.println("Found PM1006");
+          PM25AQI_DEBUG_PRINTLN("Found PM1006");
           driver = new Adafruit_PM25AQI_UART_PM1006();
           return driver->begin_UART(theStream);
           break;
         } else {
-          Serial.print("Skipping byte: ");
-          Serial.println(theStream->peek(), 16);
+          PM25AQI_DEBUG_PRINT("Skipping byte: ");
+          PM25AQI_DEBUG_PRINTLN(theStream->peek(), 16);
           theStream->read();
         }
-        Serial.println("Trying another packet");
+        PM25AQI_DEBUG_PRINTLN("Trying another packet");
       } else {
-        Serial.println("No serial data available, retrying");
+        PM25AQI_DEBUG_PRINTLN("No serial data available, retrying");
       }
       delay(100);
-      yield();
       retries++;
     }
   }

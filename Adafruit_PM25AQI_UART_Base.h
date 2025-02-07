@@ -17,8 +17,6 @@ protected:
   bool read_uart_data(uint8_t *buffer, size_t bufLen);
   
   Stream *serial_dev = nullptr;
-  static const uint8_t BUFFER_LENGTH = 32;
-  uint8_t _buffer[BUFFER_LENGTH];
 };
 
 #endif
