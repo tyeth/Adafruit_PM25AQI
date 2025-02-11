@@ -51,6 +51,13 @@ public:
   virtual bool verify_checksum(uint8_t *buffer, size_t bufLen);
   virtual void decode_data(uint8_t *buffer, PM25_AQI_Data *data);
 
+  uint16_t pm25_aqi_us(float concentration);
+  uint16_t pm25_aqi_china(float concentration);
+  uint16_t pm100_aqi_us(float concentration);
+  uint16_t pm100_aqi_china(float concentration);
+  float linear(uint16_t aqi_high, uint16_t aqi_low, float conc_high,
+               float conc_low, float concentration);
+
 protected:
   uint8_t BUFFER_LENGTH = 32;
   uint8_t *_buffer = nullptr;

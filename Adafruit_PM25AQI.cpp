@@ -63,7 +63,7 @@ bool Adafruit_PM25AQI::begin_I2C(TwoWire *theWire, uint8_t addr) {
 }
 
 /*!
- *  @brief  Setups the hardware and detects a valid UART PM2.5
+ *  @brief  Setups the hardware and detects a valid UART PM2.5 sensor
  *  @param  theSerial
  *          Pointer to Stream (HardwareSerial/SoftwareSerial) interface
  *  @return True
@@ -74,17 +74,17 @@ bool Adafruit_PM25AQI::begin_UART(Stream *theStream) {
     driver = nullptr;
   }
   uint8_t retries = 0;
-  while (!driver && retries < 32) {
+  while (retries < 32) {
     for (uint8_t i = 0; i < 32; i++) {
-      if (theStream->available()) {
+      if (theStream->available() || theStream->peek() != -1) {
         if (theStream->peek() == 0x42) {
-          PM25AQI_DEBUG_PRINTLN("[Adafruit_PM25AQI::begin_UART] Found PMS5003");
+          PM25AQI_DEBUG_PRINTLN("[Adafruit_PM25AQI::begin_UART] Suspected PMS5003");
           driver = new Adafruit_PM25AQI_UART_PMS5003();
           PM25AQI_DEBUG_PRINTLN("[Adafruit_PM25AQI::begin_UART] Trying to begin PMS5003 UART");
           return driver->begin_UART(theStream);
           break;
         } else if (theStream->peek() == 0x16) {
-          PM25AQI_DEBUG_PRINTLN("[Adafruit_PM25AQI::begin_UART] Found PM1006");
+          PM25AQI_DEBUG_PRINTLN("[Adafruit_PM25AQI::begin_UART] Suspected PM1006");
           driver = new Adafruit_PM25AQI_UART_PM1006();
           PM25AQI_DEBUG_PRINTLN("[Adafruit_PM25AQI::begin_UART] Trying to begin PM1006 UART");
           return driver->begin_UART(theStream);
@@ -94,13 +94,15 @@ bool Adafruit_PM25AQI::begin_UART(Stream *theStream) {
           PM25AQI_DEBUG_PRINTLN(theStream->peek(), 16);
           theStream->read();
         }
-        PM25AQI_DEBUG_PRINTLN("[Adafruit_PM25AQI::begin_UART] Trying another packet");
+        PM25AQI_DEBUG_PRINTLN("[Adafruit_PM25AQI::begin_UART] Invalid start byte, trying the next byte");
       } else {
-        PM25AQI_DEBUG_PRINTLN("[Adafruit_PM25AQI::begin_UART] No serial data available, retrying in 100ms");
+        PM25AQI_DEBUG_PRINTLN("[Adafruit_PM25AQI::begin_UART] No serial data available, retrying in 1ms");
+        delay(1);
       }
-      delay(100);
-      retries++;
     }
+    PM25AQI_DEBUG_PRINT("[Adafruit_PM25AQI::begin_UART] No valid start byte found in 32bytes, retrying ");
+    PM25AQI_DEBUG_PRINT(retries++);
+    PM25AQI_DEBUG_PRINTLN(" of 32");
   }
   return false;
 }
@@ -122,152 +124,4 @@ bool Adafruit_PM25AQI::read(PM25_AQI_Data *data) {
   }
   PM25AQI_DEBUG_PRINTLN("[Adafruit_PM25AQI::read] Reading data via driver");
   return driver->read(data);
-}
-
-/*!
- *  @brief  Get AQI of PM2.5 in US standard
- *  @param  concentration
- *          the environmental concentration of pm2.5 in ug/m3
- *  @return AQI number. 0 to 500 for valid calculation. 99999 for out of range.
- */
-uint16_t Adafruit_PM25AQI::pm25_aqi_us(float concentration) {
-  float c;
-  float AQI;
-  c = (floor(10 * concentration)) / 10;
-  if (c < 0)
-    AQI = 0;
-  else if (c >= 0 && c < 12.1f) {
-    AQI = linear(50, 0, 12, 0, c);
-  } else if (c >= 12.1f && c < 35.5f) {
-    AQI = linear(100, 51, 35.4f, 12.1f, c);
-  } else if (c >= 35.5f && c < 55.5f) {
-    AQI = linear(150, 101, 55.4f, 35.5f, c);
-  } else if (c >= 55.5f && c < 150.5f) {
-    AQI = linear(200, 151, 150.4f, 55.5f, c);
-  } else if (c >= 150.5f && c < 250.5f) {
-    AQI = linear(300, 201, 250.4f, 150.5f, c);
-  } else if (c >= 250.5f && c < 350.5f) {
-    AQI = linear(400, 301, 350.4f, 250.5f, c);
-  } else if (c >= 350.5f && c < 500.5f) {
-    AQI = linear(500, 401, 500.4f, 350.5f, c);
-  } else {
-    AQI = 99999; //
-  }
-  return round(AQI);
-}
-
-/*!
- *  @brief  Get AQI of PM10 in US standard
- *  @param  concentration
- *          the environmental concentration of pm10 in ug/m3
- *  @return AQI number. 0 to 500 for valid calculation. 99999 for out of range.
- */
-uint16_t Adafruit_PM25AQI::pm100_aqi_us(float concentration) {
-  float c;
-  float AQI;
-  c = concentration;
-  if (c < 0)
-    AQI = 0;
-  else if (c < 55) {
-    AQI = linear(50, 0, 55, 0, c);
-  } else if (c < 155) {
-    AQI = linear(100, 51, 155, 55, c);
-  } else if (c < 255) {
-    AQI = linear(150, 101, 255, 155, c);
-  } else if (c < 355) {
-    AQI = linear(200, 151, 355, 255, c);
-  } else if (c < 425) {
-    AQI = linear(300, 201, 425, 355, c);
-  } else if (c < 505) {
-    AQI = linear(400, 301, 505, 425, c);
-  } else if (c < 605) {
-    AQI = linear(500, 401, 605, 505, c);
-  } else {
-    AQI = 99999; //
-  }
-  return round(AQI);
-}
-
-/*!
- *  @brief  Get AQI of PM2.5 in China standard
- *  @param  concentration
- *          the environmental concentration of pm2.5 in ug/m3
- *  @return AQI number. 0 to 500 for valid calculation. 99999 for out of range.
- */
-uint16_t Adafruit_PM25AQI::pm25_aqi_china(float concentration) {
-  float c;
-  float AQI;
-  c = concentration;
-  if (c < 0)
-    AQI = 0;
-  else if (c <= 35) {
-    AQI = linear(50, 0, 35, 0, c);
-  } else if (c <= 75) {
-    AQI = linear(100, 51, 75, 35, c);
-  } else if (c <= 115) {
-    AQI = linear(150, 101, 115, 75, c);
-  } else if (c <= 150) {
-    AQI = linear(200, 151, 150, 115, c);
-  } else if (c <= 250) {
-    AQI = linear(300, 201, 250, 150, c);
-  } else if (c <= 350) {
-    AQI = linear(400, 301, 350, 250, c);
-  } else if (c <= 500) {
-    AQI = linear(500, 401, 500, 350, c);
-  } else {
-    AQI = 99999; //
-  }
-  return round(AQI);
-}
-
-/*!
- *  @brief  Get AQI of PM10 in China standard
- *  @param  concentration
- *          the environmental concentration of pm10 in ug/m3
- *  @return AQI number. 0 to 500 for valid calculation. 99999 for out of range.
- */
-uint16_t Adafruit_PM25AQI::pm100_aqi_china(float concentration) {
-  float c;
-  float AQI;
-  c = concentration;
-  if (c < 0)
-    AQI = 0;
-  else if (c <= 50) {
-    AQI = linear(50, 0, 50, 0, c);
-  } else if (c <= 150) {
-    AQI = linear(100, 51, 150, 50, c);
-  } else if (c <= 250) {
-    AQI = linear(150, 101, 250, 150, c);
-  } else if (c <= 350) {
-    AQI = linear(200, 151, 350, 250, c);
-  } else if (c <= 420) {
-    AQI = linear(300, 201, 420, 350, c);
-  } else if (c <= 500) {
-    AQI = linear(400, 301, 500, 420, c);
-  } else if (c <= 600) {
-    AQI = linear(500, 401, 600, 500, c);
-  } else {
-    AQI = 99999; //
-  }
-  return round(AQI);
-}
-
-/*!
- *  @brief  Linearly map a concentration value to its AQI level
- *  @param  aqi_high max aqi of the calculating range
- *  @param  aqi_low min aqi of the calculating range
- *  @param  conc_high max concentration value (ug/m3) of the calculating range
- *  @param  conc_low min concentration value (ug/m3) of the calculating range
- *  @param  concentration
- *          the concentration value to be calculated
- *  @return Calculated AQI value
- */
-float Adafruit_PM25AQI::linear(uint16_t aqi_high, uint16_t aqi_low,
-                               float conc_high, float conc_low,
-                               float concentration) {
-  float f;
-  f = ((concentration - conc_low) / (conc_high - conc_low)) *
-          (aqi_high - aqi_low) +
-      aqi_low;
-  return f;
 }

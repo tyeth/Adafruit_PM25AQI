@@ -22,7 +22,7 @@ bool Adafruit_PM25AQI_UART_Base::read_uart_data(uint8_t *buffer, size_t bufLen) 
     PM25AQI_DEBUG_PRINTLN("NO_DEVICE: No serial device available - unable to read_uart_data");
     return false;
   }
-  if (!serial_dev->available()) {
+  if (!serial_dev->available() && (serial_dev->peek() == -1)) {
     PM25AQI_DEBUG_PRINTLN("NO_DATA: No serial data available - unable to read_uart_data");
     return false;
   }
@@ -35,7 +35,7 @@ bool Adafruit_PM25AQI_UART_Base::read_uart_data(uint8_t *buffer, size_t bufLen) 
            PM25AQI_DEBUG_PRINTLN(serial_dev->peek(), HEX);
            serial_dev->read();
            skipped++;
-           if (!serial_dev->available()) {
+           if (!serial_dev->available() && (serial_dev->peek() == -1)) {
              PM25AQI_DEBUG_PRINT("NO_DATA_SKIP: No serial data available - unable to read_uart_data, skipped: ");
              PM25AQI_DEBUG_PRINTLN(skipped - 1);
              return false;
@@ -56,10 +56,10 @@ bool Adafruit_PM25AQI_UART_Base::read_uart_data(uint8_t *buffer, size_t bufLen) 
     PM25AQI_DEBUG_PRINTLN(serial_dev->available());
     Serial.flush();
     delay(10);
-    for (size_t i = 0; i < serial_dev->available(); i++)
+    while(serial_dev->available())
     {
       serial_dev->read();
-      yield();
+      yield(); //TODO: Tyeth - Remove and retest
     }
   }
   if (returned_bytes != bufLen) {
@@ -74,7 +74,9 @@ bool Adafruit_PM25AQI_UART_Base::read_uart_data(uint8_t *buffer, size_t bufLen) 
 }
 
 bool Adafruit_PM25AQI_UART_Base::read(PM25_AQI_Data *data) {
-  PM25AQI_DEBUG_PRINTLN("Adafruit_PM25AQI_UART_Base::read - Buffer length: " + String(BUFFER_LENGTH));
+  PM25AQI_DEBUG_PRINT("Adafruit_PM25AQI_UART_Base::read (available: ");
+  PM25AQI_DEBUG_PRINT(serial_dev->available());
+  PM25AQI_DEBUG_PRINTLN(" - Buffer length: " + String(BUFFER_LENGTH) + ")");
   if (!data || !read_uart_data(_buffer, BUFFER_LENGTH)) {
     return false;
   }

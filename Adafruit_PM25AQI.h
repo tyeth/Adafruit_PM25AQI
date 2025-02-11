@@ -43,13 +43,6 @@ public:
   
   bool read(PM25_AQI_Data *data);
 
-  uint16_t pm25_aqi_us(float concentration);
-  uint16_t pm25_aqi_china(float concentration);
-  uint16_t pm100_aqi_us(float concentration);
-  uint16_t pm100_aqi_china(float concentration);
-  float linear(uint16_t aqi_high, uint16_t aqi_low, float conc_high,
-               float conc_low, float concentration);
-
 private:
   Adafruit_PM25AQI_Base *driver = nullptr;
   // Remove old private members as they're now handled by specific drivers
