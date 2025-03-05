@@ -5,8 +5,12 @@
 #include <Adafruit_I2CDevice.h>
 
 #if 1
-#define PM25AQI_DEBUG_PRINT(...) Serial.print(__VA_ARGS__); Serial.flush()
-#define PM25AQI_DEBUG_PRINTLN(...) Serial.println(__VA_ARGS__); Serial.flush()
+#define PM25AQI_DEBUG_PRINT(...)                                               \
+  Serial.print(__VA_ARGS__);                                                   \
+  Serial.flush()
+#define PM25AQI_DEBUG_PRINTLN(...)                                             \
+  Serial.println(__VA_ARGS__);                                                 \
+  Serial.flush()
 #else
 #define PM25AQI_DEBUG_PRINT(...)
 #define PM25AQI_DEBUG_PRINTLN(...)
@@ -38,7 +42,6 @@ typedef struct PMSAQIdata {
   uint8_t aqi_pm100_china; ///< pm10 AQI of China
 
 } PM25_AQI_Data;
-
 
 class Adafruit_PM25AQI_Base {
 public:
