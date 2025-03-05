@@ -43,6 +43,9 @@ typedef struct PMSAQIdata {
 
 } PM25_AQI_Data;
 
+/*! 
+  * Base class with state/helpers for interacting with PM2.5 Air Quality Sensor
+  */
 class Adafruit_PM25AQI_Base {
 public:
   Adafruit_PM25AQI_Base();

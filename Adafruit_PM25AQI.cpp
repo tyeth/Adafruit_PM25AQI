@@ -51,6 +51,8 @@ Adafruit_PM25AQI::~Adafruit_PM25AQI() {
  *  @brief  Setups the hardware and detects a valid PMSA003I. Initializes I2C.
  *  @param  theWire
  *          Optional pointer to I2C interface, otherwise use Wire
+ *  @param  addr
+ *          Optional I2C address, default is PMSA003I_I2CADDR_DEFAULT (0x12)
  *  @return True if PMSA003I found on I2C, False if something went wrong!
  */
 bool Adafruit_PM25AQI::begin_I2C(TwoWire *theWire, uint8_t addr) {
@@ -64,7 +66,7 @@ bool Adafruit_PM25AQI::begin_I2C(TwoWire *theWire, uint8_t addr) {
 
 /*!
  *  @brief  Setups the hardware and detects a valid UART PM2.5 sensor
- *  @param  theSerial
+ *  @param  theStream
  *          Pointer to Stream (HardwareSerial/SoftwareSerial) interface
  *  @return True
  */

@@ -3,6 +3,9 @@
 
 #include "Adafruit_PM25AQI.h"
 
+/*!
+ *  @brief  Base class for PM2.5 sensor driver for UART
+ */
 class Adafruit_PM25AQI_UART_Base : public Adafruit_PM25AQI_Base {
 public:
   ~Adafruit_PM25AQI_UART_Base() override; // Need this for serial_dev cleanup

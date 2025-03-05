@@ -13,17 +13,37 @@ Adafruit_PM25AQI_Base::~Adafruit_PM25AQI_Base() {
   _buffer = nullptr;
 }
 
+/*!
+ *  @brief  Read the sensor data into the data struct
+ *  @param  data
+ *          The data struct to fill
+ *  @return True if the data was read successfully, false if there was an error
+ */
 bool Adafruit_PM25AQI_Base::read(PM25_AQI_Data *data) {
   PM25AQI_DEBUG_PRINTLN("[ERROR] Messed up classes! Base read");
   return false;
 }
 
+/*!
+ *  @brief  Verify the starting bytes of the data packet
+ *  @param  buffer
+ *          The buffer with the data from the sensor
+ *  @return True if the starting bytes are correct, false if they are incorrect
+ */
 bool Adafruit_PM25AQI_Base::verify_starting_bytes(uint8_t *buffer) {
   PM25AQI_DEBUG_PRINTLN("Base verify_starting_bytes");
   // PMSA003I uses same protocol as PMS5003: 0x42 0x4D
   return (buffer[0] == 0x42 && buffer[1] == 0x4D);
 }
 
+/*!
+ *  @brief  Verify the checksum of the data packet
+ *  @param  buffer
+ *          The buffer with the data from the sensor
+ *  @param  bufLen
+ *          The length of the buffer
+ *  @return True if the checksum is correct, false if it is incorrect
+ */
 bool Adafruit_PM25AQI_Base::verify_checksum(uint8_t *buffer, size_t bufLen) {
   PM25AQI_DEBUG_PRINTLN("Base verify_checksum");
   uint16_t sum = 0;
@@ -35,6 +55,13 @@ bool Adafruit_PM25AQI_Base::verify_checksum(uint8_t *buffer, size_t bufLen) {
   return check == sum;
 }
 
+/*!
+ *  @brief  Decode the data from the sensor into the data struct
+ *  @param  buffer
+ *          The buffer with the data from the sensor
+ *  @param  data
+ *          The data struct to fill
+ */
 void Adafruit_PM25AQI_Base::decode_data(uint8_t *buffer, PM25_AQI_Data *data) {
   PM25AQI_DEBUG_PRINTLN("Base decode_data");
   // The data comes in endian'd, this solves it so it works on all platforms

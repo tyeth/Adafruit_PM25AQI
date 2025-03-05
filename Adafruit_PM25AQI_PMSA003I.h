@@ -5,6 +5,9 @@
 
 #define PMSA003I_I2CADDR_DEFAULT 0x12
 
+/*!
+ *  @brief  PM2.5 sensor driver for Plantower PMSA003I
+ */
 class Adafruit_PM25AQI_PMSA003I : public Adafruit_PM25AQI_I2C_Base {
 public:
   // Adafruit_PM25AQI_PMSA003I();
