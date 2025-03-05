@@ -7,7 +7,6 @@ Adafruit_PM25AQI_I2C_Base::~Adafruit_PM25AQI_I2C_Base()
         delete i2c_dev;
         i2c_dev = nullptr;
     }
-    Adafruit_PM25AQI_Base::~Adafruit_PM25AQI_Base();
 }
 
 bool Adafruit_PM25AQI_I2C_Base::begin_I2C(TwoWire *theWire, uint8_t addr)

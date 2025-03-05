@@ -5,7 +5,6 @@ Adafruit_PM25AQI_UART_Base::~Adafruit_PM25AQI_UART_Base() {
         delete serial_dev;
         serial_dev = nullptr;
     }
-    Adafruit_PM25AQI_Base::~Adafruit_PM25AQI_Base();
 }
 
 bool Adafruit_PM25AQI_UART_Base::begin_UART(Stream *theStream) {
@@ -76,12 +75,12 @@ bool Adafruit_PM25AQI_UART_Base::read_uart_data(uint8_t *buffer, size_t bufLen) 
 bool Adafruit_PM25AQI_UART_Base::read(PM25_AQI_Data *data) {
   PM25AQI_DEBUG_PRINT("Adafruit_PM25AQI_UART_Base::read (available: ");
   PM25AQI_DEBUG_PRINT(serial_dev->available());
-  PM25AQI_DEBUG_PRINTLN(" - Buffer length: " + String(BUFFER_LENGTH) + ")");
-  if (!data || !read_uart_data(_buffer, BUFFER_LENGTH)) {
+  PM25AQI_DEBUG_PRINTLN(" - Buffer length: " + String(_bufferSize) + ")");
+  if (!data || !read_uart_data(_buffer, _bufferSize)) {
     return false;
   }
 
-  if (!verify_starting_bytes(_buffer) || !verify_checksum(_buffer, BUFFER_LENGTH)) {
+  if (!verify_starting_bytes(_buffer) || !verify_checksum(_buffer, _bufferSize)) {
     return false;
   }
 

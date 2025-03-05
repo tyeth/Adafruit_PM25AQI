@@ -11,8 +11,8 @@ public:
   virtual bool read(PM25_AQI_Data *data) override;
 
 // protected:
-//   static const uint8_t BUFFER_LENGTH = 32;
-//   uint8_t _buffer[BUFFER_LENGTH];
+//   static const uint8_t _bufferSize = 32;
+//   uint8_t _buffer[_bufferSize];
 };
 
 #endif

@@ -59,7 +59,7 @@ public:
                float conc_low, float concentration);
 
 protected:
-  uint8_t BUFFER_LENGTH = 32;
+  uint8_t _bufferSize = 32;
   uint8_t *_buffer = nullptr;
 };
 

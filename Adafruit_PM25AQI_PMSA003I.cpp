@@ -5,12 +5,11 @@ bool Adafruit_PM25AQI_PMSA003I::read(PM25_AQI_Data *data) {
     return false;
   }
 
-  // Read the data from I2C
-  if (!i2c_dev->read(_buffer, BUFFER_LENGTH)) {
+  if (!i2c_dev->read(_buffer, _bufferSize)) {
     return false;
   }
 
-  if (!verify_starting_bytes(_buffer) || !verify_checksum(_buffer, BUFFER_LENGTH)) {
+  if (!verify_starting_bytes(_buffer) || !verify_checksum(_buffer, _bufferSize)) {
     return false;
   }
 

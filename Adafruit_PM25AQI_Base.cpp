@@ -5,7 +5,7 @@
     if (_buffer) {
       delete[] _buffer;
     }
-    _buffer = new uint8_t[BUFFER_LENGTH];
+    _buffer = new uint8_t[_bufferSize];
   }
 
   Adafruit_PM25AQI_Base::~Adafruit_PM25AQI_Base() {

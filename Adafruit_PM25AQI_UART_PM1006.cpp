@@ -2,11 +2,11 @@
 
 Adafruit_PM25AQI_UART_PM1006::Adafruit_PM25AQI_UART_PM1006() {
   PM25AQI_DEBUG_PRINTLN("Adafruit_PM25AQI_UART_PM1006::Adafruit_PM25AQI_UART_PM1006");
-  BUFFER_LENGTH = 20;
+  _bufferSize = 20;
   if (_buffer) {
     delete[] _buffer;
   }
-  _buffer = new uint8_t[BUFFER_LENGTH];
+  _buffer = new uint8_t[_bufferSize];
 }
 
 bool Adafruit_PM25AQI_UART_PM1006::verify_starting_bytes(uint8_t *buffer) {
