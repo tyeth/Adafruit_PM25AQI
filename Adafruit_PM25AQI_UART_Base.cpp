@@ -7,12 +7,6 @@ Adafruit_PM25AQI_UART_Base::~Adafruit_PM25AQI_UART_Base() {
   }
 }
 
-/*!
- *  @brief  Setups the hardware and detects a valid UART PM2.5 sensor
- *  @param  theStream
- *          Pointer to Stream (HardwareSerial/SoftwareSerial) interface
- *  @return True
- */
 bool Adafruit_PM25AQI_UART_Base::begin_UART(Stream *theStream) {
   if (serial_dev) {
     delete serial_dev;
@@ -22,14 +16,6 @@ bool Adafruit_PM25AQI_UART_Base::begin_UART(Stream *theStream) {
   return serial_dev != nullptr;
 }
 
-/*!
- *  @brief  Read data from the UART stream
- *  @param  buffer
- *          The buffer to read data into
- *  @param  bufLen
- *          The length of the buffer
- *  @return True if the data was read successfully, false if there was an error
- */
 bool Adafruit_PM25AQI_UART_Base::read_uart_data(uint8_t *buffer,
                                                 size_t bufLen) {
   if (!serial_dev) {

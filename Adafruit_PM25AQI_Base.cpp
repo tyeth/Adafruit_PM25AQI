@@ -13,37 +13,17 @@ Adafruit_PM25AQI_Base::~Adafruit_PM25AQI_Base() {
   _buffer = nullptr;
 }
 
-/*!
- *  @brief  Read the sensor data into the data struct
- *  @param  data
- *          The data struct to fill
- *  @return True if the data was read successfully, false if there was an error
- */
 bool Adafruit_PM25AQI_Base::read(PM25_AQI_Data *data) {
   PM25AQI_DEBUG_PRINTLN("[ERROR] Messed up classes! Base read");
   return false;
 }
 
-/*!
- *  @brief  Verify the starting bytes of the data packet
- *  @param  buffer
- *          The buffer with the data from the sensor
- *  @return True if the starting bytes are correct, false if they are incorrect
- */
 bool Adafruit_PM25AQI_Base::verify_starting_bytes(uint8_t *buffer) {
   PM25AQI_DEBUG_PRINTLN("Base verify_starting_bytes");
   // PMSA003I uses same protocol as PMS5003: 0x42 0x4D
   return (buffer[0] == 0x42 && buffer[1] == 0x4D);
 }
 
-/*!
- *  @brief  Verify the checksum of the data packet
- *  @param  buffer
- *          The buffer with the data from the sensor
- *  @param  bufLen
- *          The length of the buffer
- *  @return True if the checksum is correct, false if it is incorrect
- */
 bool Adafruit_PM25AQI_Base::verify_checksum(uint8_t *buffer, size_t bufLen) {
   PM25AQI_DEBUG_PRINTLN("Base verify_checksum");
   uint16_t sum = 0;
@@ -55,13 +35,6 @@ bool Adafruit_PM25AQI_Base::verify_checksum(uint8_t *buffer, size_t bufLen) {
   return check == sum;
 }
 
-/*!
- *  @brief  Decode the data from the sensor into the data struct
- *  @param  buffer
- *          The buffer with the data from the sensor
- *  @param  data
- *          The data struct to fill
- */
 void Adafruit_PM25AQI_Base::decode_data(uint8_t *buffer, PM25_AQI_Data *data) {
   PM25AQI_DEBUG_PRINTLN("Base decode_data");
   // The data comes in endian'd, this solves it so it works on all platforms
@@ -84,12 +57,6 @@ void Adafruit_PM25AQI_Base::decode_data(uint8_t *buffer, PM25_AQI_Data *data) {
   data->aqi_pm25_china = pm25_aqi_china(data->pm25_standard);
 }
 
-/*!
- *  @brief  Get AQI of PM2.5 in US standard
- *  @param  concentration
- *          the environmental concentration of pm2.5 in ug/m3
- *  @return AQI number. 0 to 500 for valid calculation. 99999 for out of range.
- */
 uint16_t Adafruit_PM25AQI_Base::pm25_aqi_us(float concentration) {
   float c;
   float AQI;
@@ -116,12 +83,6 @@ uint16_t Adafruit_PM25AQI_Base::pm25_aqi_us(float concentration) {
   return round(AQI);
 }
 
-/*!
- *  @brief  Get AQI of PM10 in US standard
- *  @param  concentration
- *          the environmental concentration of pm10 in ug/m3
- *  @return AQI number. 0 to 500 for valid calculation. 99999 for out of range.
- */
 uint16_t Adafruit_PM25AQI_Base::pm100_aqi_us(float concentration) {
   float c;
   float AQI;
@@ -148,12 +109,6 @@ uint16_t Adafruit_PM25AQI_Base::pm100_aqi_us(float concentration) {
   return round(AQI);
 }
 
-/*!
- *  @brief  Get AQI of PM2.5 in China standard
- *  @param  concentration
- *          the environmental concentration of pm2.5 in ug/m3
- *  @return AQI number. 0 to 500 for valid calculation. 99999 for out of range.
- */
 uint16_t Adafruit_PM25AQI_Base::pm25_aqi_china(float concentration) {
   float c;
   float AQI;
@@ -180,12 +135,6 @@ uint16_t Adafruit_PM25AQI_Base::pm25_aqi_china(float concentration) {
   return round(AQI);
 }
 
-/*!
- *  @brief  Get AQI of PM10 in China standard
- *  @param  concentration
- *          the environmental concentration of pm10 in ug/m3
- *  @return AQI number. 0 to 500 for valid calculation. 99999 for out of range.
- */
 uint16_t Adafruit_PM25AQI_Base::pm100_aqi_china(float concentration) {
   float c;
   float AQI;
@@ -212,16 +161,6 @@ uint16_t Adafruit_PM25AQI_Base::pm100_aqi_china(float concentration) {
   return round(AQI);
 }
 
-/*!
- *  @brief  Linearly map a concentration value to its AQI level
- *  @param  aqi_high max aqi of the calculating range
- *  @param  aqi_low min aqi of the calculating range
- *  @param  conc_high max concentration value (ug/m3) of the calculating range
- *  @param  conc_low min concentration value (ug/m3) of the calculating range
- *  @param  concentration
- *          the concentration value to be calculated
- *  @return Calculated AQI value
- */
 float Adafruit_PM25AQI_Base::linear(uint16_t aqi_high, uint16_t aqi_low,
                                     float conc_high, float conc_low,
                                     float concentration) {

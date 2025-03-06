@@ -14,7 +14,7 @@ public:
   bool begin_UART(Stream *theStream) override { return false; }
 
 protected:
-  Adafruit_I2CDevice *i2c_dev = nullptr;
+  Adafruit_I2CDevice *i2c_dev = nullptr; ///< The I2C device
 };
 
 #endif

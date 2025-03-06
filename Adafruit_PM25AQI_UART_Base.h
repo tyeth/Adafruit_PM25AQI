@@ -16,12 +16,18 @@ public:
   virtual bool read(PM25_AQI_Data *data) override;
 
 protected:
-  // virtual bool verify_starting_bytes(uint8_t *buffer) override;
-  // virtual bool verify_checksum(uint8_t *buffer, size_t bufLen) override;
-  // virtual void decode_data(uint8_t *buffer, PM25_AQI_Data *data) override;
+  /*!
+   *  @brief  Read data from the UART stream
+   *  @param  buffer
+   *          The buffer to read data into
+   *  @param  bufLen
+   *          The length of the buffer
+   *  @return True if the data was read successfully, false if there was an
+   * error
+   */
   bool read_uart_data(uint8_t *buffer, size_t bufLen);
 
-  Stream *serial_dev = nullptr;
+  Stream *serial_dev = nullptr; ///< The serial device
 };
 
 #endif
